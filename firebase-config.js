@@ -1,20 +1,25 @@
 // Configuración de Firebase para Kanayas.
 // Reemplaza estos valores por los de tu proyecto Firebase.
-const KANAYAS_FIREBASE_CONFIG = {
-  apiKey: "TU_API_KEY",
-  authDomain: "TU_PROYECTO.firebaseapp.com",
-  projectId: "TU_PROJECT_ID",
-  storageBucket: "TU_PROYECTO.firebasestorage.app",
-  messagingSenderId: "TU_MESSAGING_SENDER_ID",
-  appId: "TU_APP_ID"
-};
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
 
-let kanayasDb = null;
-try {
-  if (window.firebase && KANAYAS_FIREBASE_CONFIG.projectId !== "TU_PROJECT_ID") {
-    firebase.initializeApp(KANAYAS_FIREBASE_CONFIG);
-    kanayasDb = firebase.firestore();
-  }
-} catch (error) {
-  console.error("Firebase no pudo inicializarse:", error);
-}
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyBl_hlgSGiGLXX42jlOdNf_GOehGodK9XA",
+    authDomain: "kanayas-ee136.firebaseapp.com",
+    projectId: "kanayas-ee136",
+    storageBucket: "kanayas-ee136.firebasestorage.app",
+    messagingSenderId: "194434624688",
+    appId: "1:194434624688:web:25a4a2fdea816056df1f75",
+    measurementId: "G-F50XQ42NP9"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+</script>
