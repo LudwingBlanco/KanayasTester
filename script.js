@@ -162,9 +162,9 @@ async function saveOrderToFirebase(order) {
   if (!window.kanayasDb) {
     throw new Error("Firebase no está configurado. Completa firebase-config.js");
   }
-  await kanayasDb.collection("pedidos").doc(order.codigo).set({
+  await window.kanayasDb.collection("pedidos").doc(order.codigo).set({
     ...order,
-    creadoEn: firebase.firestore.FieldValue.serverTimestamp(),
+    creadoEn: window.firebase.firestore.FieldValue.serverTimestamp(),
     estado: "pendiente"
   });
 }
@@ -207,8 +207,8 @@ async function showOrderQR() {
   $("#orderQR").innerHTML = "";
   new QRCode(document.getElementById("orderQR"), {
     text: waiterUrl.toString(),
-    width: 180,
-    height: 180,
+    width: 220,
+    height: 220,
     colorDark: "#0c0b0a",
     colorLight: "#ffffff",
     correctLevel: QRCode.CorrectLevel.H
