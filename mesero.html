@@ -1,0 +1,155 @@
+<!doctype html><html lang="es"><head><title>Kanayas · Mesero</title><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Caveat+Brush&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="staff.css">
+<style>
+main{width:min(820px,100%);margin:auto;padding:1rem 1rem 6rem}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:.4rem;padding:.4rem;margin:.8rem 0 1rem;background:var(--card);border:2px solid var(--line);border-radius:99px}
+.tabs button{padding:.8rem .4rem;border-radius:99px;font-weight:700;transition:all .35s var(--ease)}.tabs button.on{background:var(--amber);color:var(--bg)}
+.tabs b{background:var(--red);color:#fff;border-radius:99px;padding:0 .5rem;margin-left:.3rem;font-size:.8rem}.tabs b:empty,.tabs b.zero{display:none}
+.pane{display:none}.pane.on{display:block;animation:in .6s var(--ease)}@keyframes in{from{opacity:0;transform:translateY(16px)}}
+.box{background:var(--card);border:2px solid var(--line);border-radius:26px;padding:1.1rem;margin-bottom:1rem}
+.row{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:.7rem}
+.manual{display:flex;gap:.6rem;margin-top:.9rem}.manual input,.fix input{flex:1;min-width:0;font:inherit;background:var(--bg);color:var(--cream);border:2px solid var(--line);border-radius:14px;padding:.8rem}
+.status{min-height:1.3em;margin-top:.6rem;font-size:.9rem;opacity:.8}
+.rev{border-color:var(--amber);display:none}.rev.show{display:block;animation:in .6s var(--ease)}
+.rev-head{display:flex;justify-content:space-between;align-items:flex-end;gap:1rem;border-bottom:2px dashed var(--line);padding-bottom:.8rem;margin-bottom:.4rem}
+.mesaBig{font-family:'Anton',sans-serif;font-size:clamp(2.8rem,14vw,4.4rem);line-height:1;text-transform:uppercase;color:var(--amber)}
+.code{opacity:.6;font-size:.85rem;text-align:right}
+.total{display:flex;justify-content:space-between;align-items:baseline;font-weight:700;padding:.8rem 0}.total b{font-family:'Anton',sans-serif;font-size:2rem;font-weight:400;color:var(--amber)}
+.fix{margin:.6rem 0;display:none}.fix.show{display:flex;gap:.6rem}
+.two{display:grid;grid-template-columns:1.5fr 1fr;gap:.6rem}.two .btn{font-size:1.05rem;padding:1.05rem .6rem}
+.sent{min-height:1.4em;margin:.8rem 0 .2rem;text-align:center;font-weight:700;color:var(--green)}
+.lnk{display:block;margin:0 auto;font-size:.9rem;opacity:.6;text-decoration:underline;padding:.4rem}
+.x{position:absolute;top:.8rem;right:.9rem;width:38px;height:38px;border-radius:50%;background:var(--bg);border:2px solid var(--line);font-size:1rem}.rev{position:relative}
+.sum{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem}.sum span{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:.35rem .8rem;font-weight:700;font-size:.85rem}.sum b{color:var(--amber);font-family:'Anton',sans-serif;font-weight:400;font-size:1.1rem;margin-right:.3rem}
+.ord{background:var(--card);border:2px solid var(--line);border-radius:24px;padding:1.1rem;margin-bottom:.9rem;display:grid;gap:.7rem;animation:in .6s var(--ease) both}
+.ord.s-listo{border-color:var(--green);box-shadow:0 0 0 3px rgba(62,207,142,.18);animation:glow 2s infinite}
+@keyframes glow{50%{box-shadow:0 0 0 7px rgba(62,207,142,.08)}}
+.ord-top{display:flex;align-items:center;justify-content:space-between;gap:.8rem}.ord .mesaBig{font-size:2.2rem;color:var(--cream);white-space:nowrap}
+.badge{font-weight:700;font-size:.85rem;padding:.4rem .9rem;border-radius:99px;background:var(--line);white-space:nowrap}
+.s-recibido .badge{background:rgba(245,163,26,.18);color:var(--amber)}.s-preparando .badge{background:var(--amber);color:var(--bg)}.s-listo .badge{background:var(--green);color:#06210f}
+.meta{font-size:.82rem;opacity:.65}
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:.3rem;list-style:none;padding:0}
+.steps li{font-size:.68rem;text-align:center;font-weight:700;opacity:.4;border-top:5px solid var(--line);padding-top:.35rem;transition:all .4s}
+.steps li.d{opacity:1;border-top-color:var(--amber)}.steps li.c{opacity:1;color:var(--amber)}.s-listo .steps li.d{border-top-color:var(--green)}.s-listo .steps li.c{color:var(--green)}
+details summary{cursor:pointer;font-weight:700;font-size:.9rem;color:var(--amber)}
+.empty{opacity:.55;text-align:center;padding:2.5rem 1rem;border:2px dashed var(--line);border-radius:22px}
+@media print{#scanBox,.net,.sent,.lnk,.x,.fix{display:none!important}body{background:#fff;color:#000}.top,.tabs,.btn,.row,.manual{display:none!important}.pane{display:none}#pane-nuevo{display:block}.box{border:0}.chip,.nota{border:1px solid #000;color:#000;background:#fff}}
+.codein input{width:100%;font-family:'Anton',Impact,sans-serif;font-size:clamp(2.6rem,16vw,4rem);letter-spacing:.35em;text-align:center;padding:.7rem .2rem .7rem .6em;border-radius:20px;border:2px solid var(--amber);background:var(--bg);color:var(--amber)}
+.codein input:focus{outline:none;box-shadow:0 0 0 4px rgba(245,163,26,.25)}.codein input::placeholder{color:var(--line)}
+</style></head><body>
+<header class="top"><div class="brand"><a class="logo" href="index.html">Kanayas</a><span class="role">Mesero</span></div>
+<span class="net" id="net">⚪ Conectando…</span><div class="links"><a href="personal.html">Personal</a><button id="out">Salir</button></div></header>
+<main>
+<nav class="tabs"><button class="on" data-tab="nuevo">🔢 Nuevo pedido</button><button data-tab="curso">📋 Pedidos en curso <b id="cnt"></b></button></nav>
+
+<section class="pane on" id="pane-nuevo">
+  <div class="box" id="scanBox">
+    <p class="tag">Código del cliente</p><p style="opacity:.7;font-size:.95rem">Escribe los 5 números que te muestra el cliente en su celular.</p>
+    <div class="codein"><input id="codeInput" inputmode="numeric" pattern="[0-9]*" maxlength="5" autocomplete="off" placeholder="00000" aria-label="Código de 5 dígitos"></div>
+    <button class="btn primary" id="manualBtn" style="width:100%;margin-top:.8rem">Buscar pedido</button>
+    <p class="status" id="status"></p>
+  </div>
+  <section class="box rev" id="rev">
+    <div class="rev-head"><button class="x" id="clearBtn" aria-label="Cerrar pedido">✕</button><div><p class="tag">Pedido recibido</p><div class="mesaBig" id="rMesa">Mesa</div><div id="rCli" style="font-weight:700"></div></div><div class="code" id="rCode"></div></div>
+    <div class="fix" id="fix"><input id="fixMesa" placeholder="Este pedido no trae mesa. Escribe el número"></div>
+    <div id="rItems"></div>
+    <div class="total"><span>Total</span><b id="rTotal"></b></div>
+    <div class="two"><button class="btn ok" id="sendBtn">✅ Enviar a cocina</button><button class="btn ghost" id="printBtn">🖨️ Imprimir</button></div>
+    <p class="sent" id="sentMsg"></p>
+    <button class="lnk" id="again">Registrar otro código</button>
+  </section>
+</section>
+
+<section class="pane" id="pane-curso">
+  <div class="sum" id="sum"></div><div id="err"></div><div id="list"></div>
+</section>
+</main>
+<div class="toast" id="toast"></div>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="staff.js"></script>
+<script>
+let cur=null;
+const tabTo=t=>{document.querySelectorAll(".tabs button").forEach(b=>b.classList.toggle("on",b.dataset.tab===t));document.querySelectorAll(".pane").forEach(p=>p.classList.toggle("on",p.id==="pane-"+t))};
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>tabTo(b.dataset.tab));
+$("#out").onclick=salir;
+
+/* ---------- Registrar el código de 5 dígitos ---------- */
+async function abrir(v){
+  const code=String(v||"").replace(/\D/g,"");
+  if(code.length!==5)throw new Error("El código tiene 5 números");
+  if(!window.kanayasDb)throw new Error("Firebase no está configurado");
+  try{
+    const col=kanayasDb.collection("pedidos");
+    let q=await col.where("codigo5","==",code).where("estado","==","pendiente").get();
+    if(q.empty)q=await col.where("codigo5","==",code).get();      // quizá ya fue enviado a cocina
+    if(q.empty)throw new Error("No hay un pedido con el código "+code+". Revisa los 5 números.");
+    const docs=q.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(b.fecha||"").localeCompare(String(a.fecha||"")));
+    cur=docs[0];pintarPedido();$("#status").textContent="✓ Pedido encontrado";
+  }catch(e){
+    if(e.code==="permission-denied")throw new Error("Firebase bloqueó la consulta. Revisa las reglas de Firestore.");
+    if(e.code==="unavailable")throw new Error("Sin conexión a Firebase. Revisa el internet e intenta de nuevo.");
+    throw e;
+  }
+}
+function pintarPedido(){
+  const o=cur,enviado=o.estado&&o.estado!=="pendiente";
+  $("#rMesa").textContent=o.mesa?"Mesa "+o.mesa:"Sin mesa";$("#rCli").textContent="👤 "+(o.cliente||"Cliente");$("#rCode").textContent=o.codigo5?"Código "+o.codigo5:(o.codigo||o.id);
+  $("#rItems").innerHTML=itemsHtml(o.items);$("#rTotal").textContent=fmt(o.total);
+  $("#fix").classList.toggle("show",!o.mesa&&!enviado);$("#sentMsg").textContent=enviado?"✓ Este pedido ya está en cocina":"";
+  const b=$("#sendBtn");b.disabled=enviado;b.textContent=enviado?"✓ Enviado · "+(ESTADOS[o.estado]||o.estado):"✅ Enviar a cocina";
+  $("#rev").classList.add("show");$("#rev").scrollIntoView({behavior:"smooth"});
+}
+$("#sendBtn").onclick=async()=>{
+  const b=$("#sendBtn");let mesa=cur.mesa;if(!mesa){mesa=$("#fixMesa").value.trim();if(!mesa){toast("Escribe el número de mesa");return}}
+  b.disabled=true;b.textContent="Enviando…";
+  try{
+    const ref=kanayasDb.collection("pedidos").doc(cur.id),s=await ref.get();
+    if(s.data().estado&&s.data().estado!=="pendiente"){cur={...cur,...s.data()};pintarPedido();toast("Este pedido ya había sido enviado");return}
+    await ref.update({mesa,estado:"espera",enviadoCocina:true,dia:hoy(),confirmadoEn:firebase.firestore.FieldValue.serverTimestamp(),confirmadoMs:Date.now()});
+    const v=await ref.get();if(!v.exists||v.data().enviadoCocina!==true)throw new Error("sin confirmar");
+    cur={...cur,mesa,estado:"espera"};b.textContent="✓ Enviado a cocina";$("#fix").classList.remove("show");
+    $("#sentMsg").textContent="✓ Mesa "+mesa+" enviada: ya aparece en la pantalla de cocina";toast("Pedido enviado a cocina ✓",true);
+  }catch(e){b.disabled=false;b.textContent="✅ Enviar a cocina";$("#sentMsg").textContent="";toast("No se pudo enviar. Revisa la conexión e intenta de nuevo.")}
+};
+function reset(){$("#rev").classList.remove("show");$("#sentMsg").textContent="";$("#status").textContent="";$("#codeInput").value="";cur=null;history.replaceState(null,"",location.pathname);window.scrollTo({top:0,behavior:"smooth"});$("#codeInput").focus()}
+$("#clearBtn").onclick=reset;$("#again").onclick=reset;$("#printBtn").onclick=()=>print();
+const buscar=()=>{$("#status").textContent="Buscando…";abrir($("#codeInput").value).catch(e=>{$("#status").textContent=e.message})};
+$("#manualBtn").onclick=buscar;
+$("#codeInput").addEventListener("input",e=>{e.target.value=e.target.value.replace(/\D/g,"").slice(0,5);if(e.target.value.length===5)buscar()});
+$("#codeInput").addEventListener("keydown",e=>{if(e.key==="Enter")buscar()});
+
+/* ---------- Panel de pedidos en curso (se actualiza en vivo) ---------- */
+const ORDEN={listo:0,preparando:1,recibido:2,espera:3},PASOS=["espera","recibido","preparando","listo"];
+let prev=null;
+function panel(list){
+  const act=list.filter(o=>o.estado!=="entregado").sort((a,b)=>ORDEN[a.estado]-ORDEN[b.estado]||tMs(a)-tMs(b));
+  const n=e=>act.filter(o=>o.estado===e).length,ent=list.length-act.length;
+  $("#cnt").textContent=act.length;$("#cnt").classList.toggle("zero",!act.length);
+  $("#sum").innerHTML=`<span><b>${n("listo")}</b>Listos</span><span><b>${n("preparando")}</b>Preparándose</span><span><b>${n("recibido")}</b>Recibidos</span><span><b>${n("espera")}</b>En espera</span><span><b>${ent}</b>Entregados hoy</span>`;
+  $("#list").innerHTML=act.length?act.map(o=>{const k=PASOS.indexOf(o.estado);return `<article class="ord s-${o.estado}" data-id="${o.id}">
+    <div class="ord-top"><div class="mesaBig">Mesa ${esc(o.mesa||"?")}</div><span class="badge">${ICONOS[o.estado]||""} ${ESTADOS[o.estado]||o.estado}</span></div>
+    <div class="meta">${esc(o.cliente||"Cliente")} · ${esc(o.codigo||o.id)} · ⏱ <span data-t="${tMs(o)}">0:00</span></div>
+    <ol class="steps">${PASOS.map((p,i)=>`<li class="${i<k?"d":i===k?"d c":""}">${ESTADOS[p]}</li>`).join("")}</ol>
+    <details><summary>Ver platos (${(o.items||[]).reduce((t,i)=>t+i.cantidad,0)})</summary>${itemsHtml(o.items)}</details>
+    ${o.estado==="listo"?`<button class="btn ok" data-ent="${o.id}" style="font-size:1.05rem">🍽️ Marcar como entregado</button>`:""}</article>`}).join(""):'<div class="empty">No hay pedidos en curso.<br>Los que confirmes aparecerán aquí.</div>';
+  tick();
+}
+const tick=()=>document.querySelectorAll("[data-t]").forEach(e=>e.textContent=mmss(Date.now()-(+e.dataset.t)));
+$("#list").addEventListener("click",async e=>{const b=e.target.closest("[data-ent]");if(!b)return;b.disabled=true;
+  try{await cambiarEstado(b.dataset.ent,"entregado")}catch(x){b.disabled=false;toast("No se pudo actualizar")}});
+
+acceso(()=>{
+  escucharPedidos((list,err)=>{
+    if(err){$("#err").innerHTML='<div class="err">'+esc(err.message||"Error de conexión")+'</div>';return}
+    $("#err").innerHTML="";
+    if(prev)list.forEach(o=>{if(prev[o.id]&&prev[o.id]!=="listo"&&o.estado==="listo"){beep(3);toast("✅ Mesa "+(o.mesa||"?")+": ¡pedido listo para entrega!",true);navigator.vibrate&&navigator.vibrate([200,100,200])}});
+    prev=Object.fromEntries(list.map(o=>[o.id,o.estado]));panel(list)});
+  setInterval(tick,1000);
+  const c=new URLSearchParams(location.search).get("codigo");
+  if(c){$("#codeInput").value=c;abrir(c).catch(e=>$("#status").textContent=e.message)}
+});
+</script></body></html>
