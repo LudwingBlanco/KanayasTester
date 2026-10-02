@@ -67,7 +67,7 @@ details summary{cursor:pointer;font-weight:700;font-size:.9rem;color:var(--amber
 </section>
 </main>
 <div class="toast" id="toast"></div>
-<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" type="text/javascript"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
@@ -134,44 +134,76 @@ $("#sendBtn").onclick=async()=>{
 function reset(){$("#rev").classList.remove("show");$("#sentMsg").textContent="";$("#status").textContent="";$("#manualInput").value="";cur=null;history.replaceState(null,"",location.pathname)}
 $("#clearBtn").onclick=reset;$("#again").onclick=reset;$("#printBtn").onclick=()=>print();
 $("#manualBtn").onclick=()=>{$("#status").textContent="Buscando…";abrir($("#manualInput").value).catch(e=>$("#status").textContent=e.message)};
+let lastQrText="",lastQrAt=0;
+function mostrarLectura(texto){
+  const limpio=String(texto||"").trim();
+  if(limpio) $("#status").textContent="QR detectado: "+limpio;
+}
+async function procesarLectura(decodedText){
+  const ahora=Date.now();
+  // Evita que varios frames del mismo QR abran el pedido varias veces.
+  if(decodedText===lastQrText && ahora-lastQrAt<2500)return;
+  lastQrText=decodedText; lastQrAt=ahora;
+  mostrarLectura(decodedText);
+  const code=codeFromInput(decodedText);
+  if(!code){
+    $("#status").textContent="QR detectado, pero no contiene un código KAN válido.";
+    return;
+  }
+  try{
+    await abrir(code);
+    await stopScanner();
+    $("#status").textContent="✓ Pedido "+code+" abierto";
+  }catch(e){
+    console.error("Error al abrir pedido desde QR:",e);
+    $("#status").textContent=e.message;
+    // No detenemos la cámara: permite volver a intentar sin recargar.
+  }
+}
 async function startScanner(){
   if(scanning)return;
+  $("#status").textContent="Solicitando acceso a la cámara…";
+  lastQrText=""; lastQrAt=0;
+  const config={
+    fps:10,
+    qrbox:(vw,vh)=>{
+      const size=Math.max(180,Math.min(300,Math.floor(Math.min(vw,vh)*0.72)));
+      return {width:size,height:size};
+    },
+    aspectRatio:1,
+    disableFlip:false
+  };
+  const onSuccess=(decodedText)=>procesarLectura(decodedText);
+  const onError=()=>{};
   try{
-    scanner=new Html5Qrcode("reader", {verbose:false});
-    const config={
-      fps:12,
-      qrbox:{width:250,height:250},
-      aspectRatio:1.0,
-      formatsToSupport:[Html5QrcodeSupportedFormats.QR_CODE],
-      experimentalFeatures:{useBarCodeDetectorIfSupported:true}
-    };
-    await scanner.start({facingMode:{exact:"environment"}},config,async d=>{
-      try{
-        const code=codeFromInput(d);
-        if(!code)throw new Error("QR no válido");
-        await abrir(code);
-        await stopScanner();
-      }catch(e){
-        $("#status").textContent=e.message;
-      }
-    },()=>{});
+    scanner=new Html5Qrcode("reader",{verbose:false});
+    // Primer intento: cámara trasera, la opción más fiable en celulares.
+    await scanner.start({facingMode:"environment"},config,onSuccess,onError);
     scanning=true;
-    $("#status").textContent="Cámara activa. Apunta al QR.";
+    $("#status").textContent="Cámara activa. Centra el QR dentro del recuadro.";
+    return;
   }catch(e){
-    console.error("No se pudo activar el lector QR",e);
-    // Algunos navegadores no aceptan {exact:"environment"}; hacemos fallback.
-    try{
-      if(scanner)await scanner.clear();
-      scanner=new Html5Qrcode("reader", {verbose:false});
-      await scanner.start({facingMode:"environment"},{fps:12,qrbox:{width:250,height:250},aspectRatio:1.0},async d=>{
-        try{await abrir(d);await stopScanner()}catch(x){$("#status").textContent=x.message}
-      },()=>{});
-      scanning=true;
-      $("#status").textContent="Cámara activa. Apunta al QR.";
-    }catch(x){
-      console.error(x);
-      $("#status").textContent="No se pudo activar la cámara. Permite el acceso a la cámara y abre la página con HTTPS.";
-    }
+    console.warn("facingMode no funcionó, intentando seleccionar una cámara:",e);
+    try{if(scanner){await scanner.clear();}}catch(_){ }
+    scanner=null;
+  }
+  try{
+    // Segundo intento: enumerar cámaras y preferir la trasera por nombre.
+    const cameras=await Html5Qrcode.getCameras();
+    if(!cameras||!cameras.length)throw new Error("No se encontró ninguna cámara disponible.");
+    const rear=cameras.find(c=>/back|rear|environment|trasera|posterior/i.test(c.label))||cameras[cameras.length-1];
+    scanner=new Html5Qrcode("reader",{verbose:false});
+    await scanner.start(rear.id,config,onSuccess,onError);
+    scanning=true;
+    $("#status").textContent="Cámara activa. Centra el QR dentro del recuadro.";
+  }catch(x){
+    console.error("No se pudo iniciar el lector QR:",x);
+    try{if(scanner){await scanner.clear();}}catch(_){ }
+    scanner=null; scanning=false;
+    const msg=location.protocol!=="https:"&&location.hostname!=="localhost"
+      ?"La cámara requiere HTTPS. Abre la página desde tu dominio/GitHub Pages con HTTPS."
+      :"No se pudo activar la cámara. Permite el acceso a la cámara en el navegador y vuelve a intentarlo.";
+    $("#status").textContent=msg;
   }
 }
 async function stopScanner(){if(!scanner||!scanning)return;try{await scanner.stop();scanner.clear()}catch(e){}scanning=false}
