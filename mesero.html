@@ -48,6 +48,7 @@ details summary{cursor:pointer;font-weight:700;font-size:.9rem;color:var(--amber
     <p class="tag">Escanear</p><p style="opacity:.7;font-size:.95rem">Apunta la cámara al QR del cliente o pega el código.</p>
     <div id="reader"></div>
     <div class="row"><button class="btn primary" id="startBtn">Activar cámara</button><button class="btn ghost" id="stopBtn">Detener</button></div>
+    <div class="row"><button class="btn ghost" id="testCamBtn">Probar lector del teléfono</button></div>
     <div class="manual"><input id="manualInput" placeholder="Código KAN-… o enlace del QR"><button class="btn primary" id="manualBtn">Abrir</button></div>
     <p class="status" id="status"></p>
   </div>
@@ -141,73 +142,91 @@ function mostrarLectura(texto){
 }
 async function procesarLectura(decodedText){
   const ahora=Date.now();
-  // Evita que varios frames del mismo QR abran el pedido varias veces.
-  if(decodedText===lastQrText && ahora-lastQrAt<2500)return;
-  lastQrText=decodedText; lastQrAt=ahora;
-  mostrarLectura(decodedText);
-  const code=codeFromInput(decodedText);
+  const limpio=String(decodedText||"").trim();
+  if(!limpio)return;
+  if(limpio===lastQrText && ahora-lastQrAt<3000)return;
+  lastQrText=limpio; lastQrAt=ahora;
+  mostrarLectura(limpio);
+  const code=codeFromInput(limpio);
   if(!code){
     $("#status").textContent="QR detectado, pero no contiene un código KAN válido.";
     return;
   }
+  $("#status").textContent="✓ QR leído: "+code+" · buscando pedido…";
   try{
     await abrir(code);
     await stopScanner();
     $("#status").textContent="✓ Pedido "+code+" abierto";
   }catch(e){
     console.error("Error al abrir pedido desde QR:",e);
-    $("#status").textContent=e.message;
-    // No detenemos la cámara: permite volver a intentar sin recargar.
+    $("#status").textContent=e.message||"No se pudo abrir el pedido.";
   }
+}
+function scannerConfig(){
+  return {
+    fps:15,
+    qrbox:(vw,vh)=>{
+      const size=Math.max(180,Math.min(320,Math.floor(Math.min(vw,vh)*0.78)));
+      return {width:size,height:size};
+    },
+    aspectRatio:1,
+    disableFlip:false,
+    rememberLastUsedCamera:true
+  };
 }
 async function startScanner(){
   if(scanning)return;
   $("#status").textContent="Solicitando acceso a la cámara…";
-  lastQrText=""; lastQrAt=0;
-  const config={
-    fps:10,
-    qrbox:(vw,vh)=>{
-      const size=Math.max(180,Math.min(300,Math.floor(Math.min(vw,vh)*0.72)));
-      return {width:size,height:size};
-    },
-    aspectRatio:1,
-    disableFlip:false
-  };
-  const onSuccess=(decodedText)=>procesarLectura(decodedText);
-  const onError=()=>{};
+  lastQrText="";lastQrAt=0;
+  const success=(text)=>{ procesarLectura(text); };
+  const failure=()=>{};
   try{
+    if(typeof Html5Qrcode==="undefined")throw new Error("No se cargó el lector QR. Comprueba la conexión a internet.");
     scanner=new Html5Qrcode("reader",{verbose:false});
-    // Primer intento: cámara trasera, la opción más fiable en celulares.
-    await scanner.start({facingMode:"environment"},config,onSuccess,onError);
+    try{
+      await scanner.start({facingMode:{exact:"environment"}},scannerConfig(),success,failure);
+    }catch(first){
+      try{await scanner.clear();}catch(_){ }
+      scanner=new Html5Qrcode("reader",{verbose:false});
+      const cams=await Html5Qrcode.getCameras();
+      if(!cams||!cams.length)throw first;
+      const rear=cams.find(c=>/back|rear|environment|trasera|posterior/i.test(c.label))||cams[0];
+      await scanner.start(rear.id,scannerConfig(),success,failure);
+    }
     scanning=true;
     $("#status").textContent="Cámara activa. Centra el QR dentro del recuadro.";
-    return;
   }catch(e){
-    console.warn("facingMode no funcionó, intentando seleccionar una cámara:",e);
-    try{if(scanner){await scanner.clear();}}catch(_){ }
-    scanner=null;
-  }
-  try{
-    // Segundo intento: enumerar cámaras y preferir la trasera por nombre.
-    const cameras=await Html5Qrcode.getCameras();
-    if(!cameras||!cameras.length)throw new Error("No se encontró ninguna cámara disponible.");
-    const rear=cameras.find(c=>/back|rear|environment|trasera|posterior/i.test(c.label))||cameras[cameras.length-1];
-    scanner=new Html5Qrcode("reader",{verbose:false});
-    await scanner.start(rear.id,config,onSuccess,onError);
-    scanning=true;
-    $("#status").textContent="Cámara activa. Centra el QR dentro del recuadro.";
-  }catch(x){
-    console.error("No se pudo iniciar el lector QR:",x);
-    try{if(scanner){await scanner.clear();}}catch(_){ }
-    scanner=null; scanning=false;
-    const msg=location.protocol!=="https:"&&location.hostname!=="localhost"
-      ?"La cámara requiere HTTPS. Abre la página desde tu dominio/GitHub Pages con HTTPS."
-      :"No se pudo activar la cámara. Permite el acceso a la cámara en el navegador y vuelve a intentarlo.";
-    $("#status").textContent=msg;
+    console.error("No se pudo iniciar el lector QR:",e);
+    try{if(scanner)await scanner.clear();}catch(_){ }
+    scanner=null;scanning=false;
+    if(location.protocol!=="https:"&&location.hostname!=="localhost"){
+      $("#status").textContent="La cámara requiere HTTPS. Abre la página publicada con https://";
+    }else if(/Permission|NotAllowed|denied/i.test(e.message||"")){
+      $("#status").textContent="El navegador bloqueó la cámara. Permite la cámara para este sitio y pulsa Activar cámara otra vez.";
+    }else{
+      $("#status").textContent="No se pudo activar la cámara: "+(e.message||e);
+    }
   }
 }
-async function stopScanner(){if(!scanner||!scanning)return;try{await scanner.stop();scanner.clear()}catch(e){}scanning=false}
-$("#startBtn").onclick=startScanner;$("#stopBtn").onclick=stopScanner;
+async function stopScanner(){
+  if(!scanner)return;
+  try{if(scanning)await scanner.stop();}catch(e){}
+  try{await scanner.clear();}catch(e){}
+  scanner=null;scanning=false;
+}
+$("#startBtn").onclick=startScanner;
+$("#stopBtn").onclick=stopScanner;
+$("#testCamBtn").onclick=async()=>{
+  if(scanning){$("#status").textContent="Detén la cámara antes de probarla.";return;}
+  if(!navigator.mediaDevices?.getUserMedia){$("#status").textContent="Este navegador no permite acceso a la cámara.";return;}
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}}});
+    stream.getTracks().forEach(t=>t.stop());
+    $("#status").textContent="✓ El teléfono sí permite usar la cámara. Pulsa Activar cámara para iniciar el lector QR.";
+  }catch(e){
+    $("#status").textContent="✗ El teléfono está bloqueando la cámara. Revisa Permisos del navegador.";
+  }
+};
 
 /* ---------- Panel de pedidos en curso (se actualiza en vivo) ---------- */
 const ORDEN={listo:0,preparando:1,recibido:2,espera:3},PASOS=["espera","recibido","preparando","listo"];
