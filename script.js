@@ -215,13 +215,12 @@ async function showOrderQR() {
     return;
   }
 
-  // El QR ahora contiene SOLO el código. Esto lo hace mucho más pequeño.
-  const waiterUrl = new URL("mesero.html", window.location.href);
-  waiterUrl.searchParams.set("pedido", code);
-
+  // El QR contiene SOLO el código del pedido.
+  // Así el lector recibe exactamente el ID del documento de Firestore
+  // y no depende de la URL/ruta donde esté publicada la página.
   $("#orderQR").innerHTML = "";
   new QRCode(document.getElementById("orderQR"), {
-    text: waiterUrl.toString(),
+    text: code,
     width: 220,
     height: 220,
     colorDark: "#0c0b0a",
