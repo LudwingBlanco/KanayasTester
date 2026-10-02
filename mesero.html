@@ -79,13 +79,37 @@ document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>tabTo(b.datas
 $("#out").onclick=salir;
 
 /* ---------- Escanear / abrir pedido ---------- */
-function codeFromInput(v){v=String(v||"").trim();if(!v)return null;if(/^KAN-[A-Z0-9-]+$/i.test(v))return v.toUpperCase();
-  try{const c=new URL(v,location.href).searchParams.get("pedido");if(c)return c.toUpperCase()}catch(e){}return null}
+function codeFromInput(v){
+  v=String(v||"").trim();
+  if(!v)return null;
+  // Acepta el código directamente: KAN-...
+  if(/^KAN-[A-Z0-9-]+$/i.test(v))return v.toUpperCase();
+  // Acepta el enlace completo generado por el QR.
+  try{
+    const u=new URL(v,location.href);
+    const c=u.searchParams.get("pedido");
+    if(c && /^KAN-[A-Z0-9-]+$/i.test(c))return c.toUpperCase();
+  }catch(e){}
+  // Algunos lectores devuelven espacios o saltos de línea alrededor del resultado.
+  const m=v.match(/(?:pedido=)(KAN-[A-Z0-9-]+)/i);
+  return m ? m[1].toUpperCase() : null;
+}
 async function abrir(v){
-  const code=codeFromInput(v);if(!code)throw new Error("Código o QR inválido");
+  const code=codeFromInput(v);
+  if(!code)throw new Error("Código o QR inválido");
   if(!window.kanayasDb)throw new Error("Firebase no está configurado");
-  const s=await kanayasDb.collection("pedidos").doc(code).get();if(!s.exists)throw new Error("Pedido no encontrado");
-  cur={id:code,...s.data()};pintarPedido();$("#status").textContent="✓ Pedido abierto";
+  try{
+    const s=await kanayasDb.collection("pedidos").doc(code).get();
+    if(!s.exists)throw new Error("Pedido no encontrado");
+    cur={id:code,...s.data()};
+    pintarPedido();
+    $("#status").textContent="✓ Pedido abierto";
+  }catch(e){
+    console.error("Error al abrir pedido:",e);
+    if(e.code==="permission-denied") throw new Error("Firebase bloqueó el pedido. Revisa las reglas de Firestore.");
+    if(e.code==="unavailable") throw new Error("Sin conexión a Firebase. Revisa el internet e intenta de nuevo.");
+    throw e;
+  }
 }
 function pintarPedido(){
   const o=cur,enviado=o.estado&&o.estado!=="pendiente";
