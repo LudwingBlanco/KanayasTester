@@ -80,6 +80,22 @@ document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>tabTo(b.datas
 $("#out").onclick=salir;
 
 /* ---------- Escanear / abrir pedido ---------- */
+function decodeOrderFromQR(encoded){
+  const binary = atob(encoded);
+  const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+function orderFromQRInput(v){
+  try{
+    const u=new URL(String(v||""),location.href);
+    const encoded=u.searchParams.get("order");
+    if(!encoded)return null;
+    const o=decodeOrderFromQR(encoded);
+    if(o && o.codigo && Array.isArray(o.items))return o;
+  }catch(e){}
+  return null;
+}
+
 function codeFromInput(v){
   v=String(v||"").trim();
   if(!v)return null;
@@ -95,6 +111,13 @@ function codeFromInput(v){
   return k ? k[1].toUpperCase() : null;
 }
 async function abrir(v){
+  const qrOrder=orderFromQRInput(v);
+  if(qrOrder){
+    cur={id:qrOrder.codigo,...qrOrder};
+    pintarPedido();
+    $("#status").textContent="✓ Pedido escaneado correctamente: "+qrOrder.codigo;
+    return;
+  }
   const code=codeFromInput(v);
   if(!code)throw new Error("Código o QR inválido");
   if(!window.kanayasDb)throw new Error("Firebase no está configurado");

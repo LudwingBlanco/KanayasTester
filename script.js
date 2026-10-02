@@ -176,7 +176,6 @@ async function saveOrderToFirebase(order) {
     enviadoCocina: false
   });
 }
-
 async function showOrderQR() {
   const items = getOrderItems();
   if (!items.length) {
@@ -215,16 +214,17 @@ async function showOrderQR() {
     return;
   }
 
-  // El QR contiene una URL estable con el código del pedido.
-  // Esto mantiene compatibilidad con lectores QR de celulares y permite
-  // que el mesero abra el pedido incluso si el navegador entrega la URL completa.
+  // QR restaurado al sistema que funcionaba en la versión anterior:
+  // contiene el pedido completo codificado en ?order= y usa QRCode.js con 260x260/M.
+  // El pedido también se guarda en Firebase, por lo que las funciones nuevas
+  // de cocina, estados y estadísticas se mantienen intactas.
   $("#orderQR").innerHTML = "";
-  const qrUrl = new URL("mesero.html", window.location.href);
-  qrUrl.searchParams.set("pedido", code);
+  const waiterUrl = new URL("mesero.html", window.location.href);
+  waiterUrl.searchParams.set("order", encodeOrderForQR(order));
   new QRCode(document.getElementById("orderQR"), {
-    text: qrUrl.toString(),
-    width: 220,
-    height: 220,
+    text: waiterUrl.toString(),
+    width: 260,
+    height: 260,
     colorDark: "#0c0b0a",
     colorLight: "#ffffff",
     correctLevel: QRCode.CorrectLevel.M
