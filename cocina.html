@@ -1,0 +1,67 @@
+<!doctype html><html lang="es"><head><title>Kanayas · Cocina</title><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Caveat+Brush&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="staff.css">
+<style>
+main{padding:1.2rem clamp(1rem,3vw,2rem) 4rem}
+.stats{display:flex;gap:.6rem;flex-wrap:wrap}.st{background:var(--card);border:2px solid var(--line);border-radius:16px;padding:.4rem .9rem;font-weight:700;font-size:.9rem}.st b{font-family:'Anton',sans-serif;font-size:1.3rem;color:var(--amber);margin-right:.3rem;font-weight:400}
+.clock{font-family:'Anton',sans-serif;font-size:1.6rem;color:var(--cream)}
+h2.sec{font-size:1.8rem;margin:1.6rem 0 .9rem;display:flex;align-items:center;gap:.7rem}h2.sec small{font-family:'DM Sans';font-size:.85rem;opacity:.6;text-transform:none}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:1rem;align-items:start}
+.tk{background:var(--card);border:2px solid var(--line);border-left:8px solid var(--cream);border-radius:22px;padding:1.1rem 1.2rem;display:grid;gap:.6rem;animation:in .7s var(--ease) both}
+.tk.e-recibido{border-left-color:var(--amber)}.tk.e-preparando{border-left-color:var(--amber);background:#1f1a10;border-color:var(--amber)}.tk.e-listo{border-left-color:var(--green)}
+.tk.nuevo{animation:flash 1.6s ease}
+@keyframes in{from{opacity:0;transform:translateY(24px)}}@keyframes flash{0%,60%{box-shadow:0 0 0 4px var(--amber)}100%{box-shadow:none}}
+.tk-top{display:flex;align-items:center;gap:.8rem}.pos{font-family:'Anton',sans-serif;font-size:1.1rem;background:var(--cream);color:var(--bg);border-radius:12px;padding:.2rem .6rem}
+.mesa{font-family:'Anton',sans-serif;font-size:2.4rem;line-height:1;text-transform:uppercase;flex:1}
+.timer{font-family:'Anton',sans-serif;font-size:1.5rem;padding:.2rem .7rem;border-radius:12px;background:rgba(62,207,142,.15);color:var(--green)}
+.timer.warn{background:rgba(245,163,26,.15);color:var(--amber)}.timer.late{background:rgba(255,107,91,.18);color:var(--red);animation:pulse 1.2s infinite}
+@keyframes pulse{50%{opacity:.55}}
+.sub{font-size:.85rem;opacity:.65}.next{display:inline-block;background:var(--amber);color:var(--bg);font-weight:700;font-size:.7rem;letter-spacing:.12em;padding:.15rem .6rem;border-radius:99px;opacity:1;margin-left:.4rem}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem;margin-top:.3rem}
+.seg button{padding:.8rem .2rem;border-radius:14px;border:2px solid var(--line);font-weight:700;font-size:.82rem;transition:all .3s}
+.seg button:hover{border-color:var(--amber)}.seg button.on{background:var(--amber);border-color:var(--amber);color:var(--bg)}.seg button.on.g{background:var(--green);border-color:var(--green)}
+.ready{display:flex;flex-wrap:wrap;gap:.6rem}.rd{background:rgba(62,207,142,.12);border:2px solid var(--green);border-radius:16px;padding:.6rem 1rem;font-weight:700;display:flex;gap:.8rem;align-items:center}
+.rd b{font-family:'Anton',sans-serif;font-size:1.4rem;font-weight:400}
+.empty{opacity:.55;text-align:center;padding:3rem 1rem;border:2px dashed var(--line);border-radius:22px}
+</style></head><body>
+<header class="top"><div class="brand"><a class="logo" href="index.html">Kanayas</a><span class="role">Cocina</span></div>
+<div class="stats" id="stats"></div><span class="net" id="net">⚪ Conectando…</span><div class="clock" id="clock"></div>
+<div class="links"><a href="personal.html">Personal</a><button id="snd">🔔 Sonido: sí</button><button id="out">Salir</button></div></header>
+<main><div id="err"></div>
+<h2 class="sec">Cola de preparación <small>Los más antiguos van primero</small></h2><div class="grid" id="queue"></div>
+<h2 class="sec">Listos para entrega <small>Esperando al mesero</small></h2><div class="ready" id="ready"></div></main>
+<div class="toast" id="toast"></div>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="staff.js"></script>
+<script>
+let sonido=true,seen=null,fresh=new Set();
+$("#snd").onclick=()=>{sonido=!sonido;$("#snd").textContent="🔔 Sonido: "+(sonido?"sí":"no")};$("#out").onclick=salir;
+const tick=()=>{$("#clock").textContent=new Date().toLocaleTimeString("es-CO",{hour:"2-digit",minute:"2-digit"});
+ document.querySelectorAll("[data-t]").forEach(e=>{const ms=Date.now()-(+e.dataset.t),m=ms/60000;e.textContent=mmss(ms);e.className="timer"+(m>=15?" late":m>=8?" warn":"")})};
+function pintar(list){
+  const cola=list.filter(o=>["espera","recibido","preparando"].includes(o.estado)),listos=list.filter(o=>o.estado==="listo");
+  const c=e=>cola.filter(o=>o.estado===e).length;
+  $("#stats").innerHTML=`<span class="st"><b>${c("espera")}</b>En espera</span><span class="st"><b>${c("recibido")}</b>Recibidos</span><span class="st"><b>${c("preparando")}</b>Preparándose</span><span class="st"><b>${listos.length}</b>Listos</span>`;
+  $("#queue").innerHTML=cola.length?cola.map((o,n)=>`<article class="tk e-${o.estado}${fresh.has(o.id)?" nuevo":""}" data-id="${o.id}">
+    <div class="tk-top"><span class="pos">#${n+1}</span><div class="mesa">Mesa ${esc(o.mesa||"?")}</div><div class="timer" data-t="${tMs(o)}">0:00</div></div>
+    <div class="sub">${esc(o.cliente||"Cliente")} · ${esc(o.codigo||o.id)}${n===0?'<span class="next">SIGUIENTE</span>':""}${o.estado==="espera"?'<span class="next" style="background:var(--cream)">EN ESPERA</span>':""}</div>
+    <div>${itemsHtml(o.items)}</div>
+    <div class="seg">${[["recibido","📥 Recibido"],["preparando","🔥 Preparándose"],["listo","✅ Listo"]].map(([s,t])=>`<button data-s="${s}" class="${o.estado===s?"on":""}${s==="listo"?" g":""}">${t}</button>`).join("")}</div></article>`).join(""):'<div class="empty">Sin pedidos en cola. 🎉</div>';
+  $("#ready").innerHTML=listos.length?listos.map(o=>`<div class="rd"><b>Mesa ${esc(o.mesa||"?")}</b><span>${esc(o.cliente||"")}</span><button class="btn ghost" data-back="${o.id}" style="padding:.3rem .8rem;font-size:.8rem">↩ Regresar</button></div>`).join(""):'<div class="empty" style="padding:1rem">Nada listo todavía.</div>';
+  tick();
+}
+$("#queue").addEventListener("click",async e=>{const b=e.target.closest(".seg button");if(!b)return;const id=b.closest(".tk").dataset.id;b.disabled=true;
+ try{await cambiarEstado(id,b.dataset.s)}catch(x){toast("No se pudo actualizar. Revisa la conexión.")}});
+$("#ready").addEventListener("click",e=>{const b=e.target.closest("[data-back]");if(b)cambiarEstado(b.dataset.back,"preparando")});
+acceso(()=>{
+  escucharPedidos((list,err)=>{
+    if(err){$("#err").innerHTML='<div class="err">'+esc(err.message||"Error de conexión")+'</div>';return}
+    $("#err").innerHTML="";fresh=new Set();
+    if(seen){list.forEach(o=>{if(!seen.has(o.id))fresh.add(o.id)});if(fresh.size&&sonido){beep(3);document.title="🔔 Nuevo pedido · Cocina";setTimeout(()=>document.title="Kanayas · Cocina",4000)}}
+    seen=new Set(list.map(o=>o.id));pintar(list)});
+  setInterval(tick,1000);
+});
+</script></body></html>

@@ -1,0 +1,21 @@
+<!doctype html><html lang="es"><head><title>Kanayas · Personal</title><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Caveat+Brush&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="staff.css">
+<style>main{width:min(760px,100%);margin:auto;padding:3rem 1.2rem}h1{font-size:clamp(2.6rem,10vw,4.5rem);margin:.3rem 0 2rem}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.2rem}
+.cards a{display:grid;gap:.5rem;text-decoration:none;color:inherit;background:var(--card);border:2px solid var(--line);border-radius:28px;padding:1.8rem;transition:all .5s var(--ease)}
+.cards a:hover{border-color:var(--amber);transform:translateY(-6px) rotate(-.6deg)}
+.cards .em{font-size:3rem}.cards h2{font-size:2rem}.cards p{opacity:.7}</style></head><body>
+<header class="top"><div class="brand"><a class="logo" href="index.html">Kanayas</a><span class="role">Personal</span></div>
+<div class="links"><a href="index.html">← Página</a><button id="out">Cerrar sesión</button></div></header>
+<main><p class="tag">Bienvenido</p><h1>¿A dónde<br>vas hoy?</h1>
+<div class="cards"><a href="mesero.html"><span class="em">🧑‍🍳</span><h2>Mesero</h2><p>Escanea pedidos, confírmalos y sigue su estado.</p></a>
+<a href="cocina.html"><span class="em">🔥</span><h2>Cocina</h2><p>Cola de pedidos por orden de llegada.</p></a>
+<a href="admin.html"><span class="em">📊</span><h2>Admin</h2><p>Estadísticas, ventas, tiempos, gestión y gustos de los clientes.</p></a></div></main>
+<div class="toast" id="toast"></div>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="staff.js"></script>
+<script>acceso(()=>{});$("#out").onclick=salir;</script></body></html>
