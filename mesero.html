@@ -9,7 +9,7 @@ main{width:min(820px,100%);margin:auto;padding:1rem 1rem 6rem}
 .tabs b{background:var(--red);color:#fff;border-radius:99px;padding:0 .5rem;margin-left:.3rem;font-size:.8rem}.tabs b:empty,.tabs b.zero{display:none}
 .pane{display:none}.pane.on{display:block;animation:in .6s var(--ease)}@keyframes in{from{opacity:0;transform:translateY(16px)}}
 .box{background:var(--card);border:2px solid var(--line);border-radius:26px;padding:1.1rem;margin-bottom:1rem}
-#reader{width:100%;max-width:520px;margin:.6rem auto;border-radius:18px;overflow:hidden}
+#reader{width:100%;max-width:520px;margin:.6rem auto;border-radius:18px;overflow:hidden;background:#000;position:relative;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center}#qrVideo{width:100%;height:100%;object-fit:cover;display:block}#qrCanvas{display:none}.qr-guide{position:absolute;inset:12%;border:3px solid var(--amber);border-radius:18px;pointer-events:none;box-shadow:0 0 0 9999px rgba(0,0,0,.12)}
 .row{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:.7rem}
 .manual{display:flex;gap:.6rem;margin-top:.9rem}.manual input,.fix input{flex:1;min-width:0;font:inherit;background:var(--bg);color:var(--cream);border:2px solid var(--line);border-radius:14px;padding:.8rem}
 .status{min-height:1.3em;margin-top:.6rem;font-size:.9rem;opacity:.8}
@@ -68,7 +68,7 @@ details summary{cursor:pointer;font-weight:700;font-size:.9rem;color:var(--amber
 </section>
 </main>
 <div class="toast" id="toast"></div>
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" type="text/javascript"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
@@ -83,17 +83,16 @@ $("#out").onclick=salir;
 function codeFromInput(v){
   v=String(v||"").trim();
   if(!v)return null;
-  // Acepta el código directamente: KAN-...
   if(/^KAN-[A-Z0-9-]+$/i.test(v))return v.toUpperCase();
-  // Acepta el enlace completo generado por el QR.
   try{
     const u=new URL(v,location.href);
     const c=u.searchParams.get("pedido");
     if(c && /^KAN-[A-Z0-9-]+$/i.test(c))return c.toUpperCase();
   }catch(e){}
-  // Algunos lectores devuelven espacios o saltos de línea alrededor del resultado.
   const m=v.match(/(?:pedido=)(KAN-[A-Z0-9-]+)/i);
-  return m ? m[1].toUpperCase() : null;
+  if(m)return m[1].toUpperCase();
+  const k=v.match(/(KAN-[A-Z0-9-]+)/i);
+  return k ? k[1].toUpperCase() : null;
 }
 async function abrir(v){
   const code=codeFromInput(v);
@@ -101,10 +100,10 @@ async function abrir(v){
   if(!window.kanayasDb)throw new Error("Firebase no está configurado");
   try{
     const s=await kanayasDb.collection("pedidos").doc(code).get();
-    if(!s.exists)throw new Error("Pedido no encontrado");
+    if(!s.exists)throw new Error("Pedido no encontrado: "+code);
     cur={id:code,...s.data()};
     pintarPedido();
-    $("#status").textContent="✓ Pedido abierto";
+    $("#status").textContent="✓ Pedido abierto: "+code;
   }catch(e){
     console.error("Error al abrir pedido:",e);
     if(e.code==="permission-denied") throw new Error("Firebase bloqueó el pedido. Revisa las reglas de Firestore.");
@@ -132,101 +131,64 @@ $("#sendBtn").onclick=async()=>{
     $("#sentMsg").textContent="✓ Mesa "+mesa+" enviada: ya aparece en la pantalla de cocina";toast("Pedido enviado a cocina ✓",true);
   }catch(e){b.disabled=false;b.textContent="✅ Enviar a cocina";$("#sentMsg").textContent="";toast("No se pudo enviar. Revisa la conexión e intenta de nuevo.")}
 };
-function reset(){$("#rev").classList.remove("show");$("#sentMsg").textContent="";$("#status").textContent="";$("#manualInput").value="";cur=null;history.replaceState(null,"",location.pathname)}
+function reset(){stopScanner();$("#rev").classList.remove("show");$("#sentMsg").textContent="";$("#status").textContent="";$("#manualInput").value="";cur=null;history.replaceState(null,"",location.pathname)}
 $("#clearBtn").onclick=reset;$("#again").onclick=reset;$("#printBtn").onclick=()=>print();
 $("#manualBtn").onclick=()=>{$("#status").textContent="Buscando…";abrir($("#manualInput").value).catch(e=>$("#status").textContent=e.message)};
-let lastQrText="",lastQrAt=0;
-function mostrarLectura(texto){
-  const limpio=String(texto||"").trim();
-  if(limpio) $("#status").textContent="QR detectado: "+limpio;
-}
+
+let lastQrText="",lastQrAt=0,video=null,canvas=null,ctx=null,raf=0,stream=null;
+function mostrarLectura(texto){const limpio=String(texto||"").trim();if(limpio)$("#status").textContent="QR detectado: "+limpio;}
 async function procesarLectura(decodedText){
-  const ahora=Date.now();
-  const limpio=String(decodedText||"").trim();
+  const ahora=Date.now(),limpio=String(decodedText||"").trim();
   if(!limpio)return;
   if(limpio===lastQrText && ahora-lastQrAt<3000)return;
-  lastQrText=limpio; lastQrAt=ahora;
-  mostrarLectura(limpio);
+  lastQrText=limpio;lastQrAt=ahora;mostrarLectura(limpio);
   const code=codeFromInput(limpio);
-  if(!code){
-    $("#status").textContent="QR detectado, pero no contiene un código KAN válido.";
-    return;
-  }
+  if(!code){$("#status").textContent="QR detectado, pero no contiene un código KAN válido.";return;}
   $("#status").textContent="✓ QR leído: "+code+" · buscando pedido…";
-  try{
-    await abrir(code);
-    await stopScanner();
-    $("#status").textContent="✓ Pedido "+code+" abierto";
-  }catch(e){
-    console.error("Error al abrir pedido desde QR:",e);
-    $("#status").textContent=e.message||"No se pudo abrir el pedido.";
-  }
+  try{await abrir(code);await stopScanner();$("#status").textContent="✓ Pedido "+code+" abierto";}
+  catch(e){console.error(e);$("#status").textContent=e.message||"No se pudo abrir el pedido.";}
 }
-function scannerConfig(){
-  return {
-    fps:15,
-    qrbox:(vw,vh)=>{
-      const size=Math.max(180,Math.min(320,Math.floor(Math.min(vw,vh)*0.78)));
-      return {width:size,height:size};
-    },
-    aspectRatio:1,
-    disableFlip:false,
-    rememberLastUsedCamera:true
-  };
+function ensureReader(){
+  const r=$("#reader");
+  if(!$("#qrVideo",r)){
+    r.innerHTML='<video id="qrVideo" playsinline muted></video><canvas id="qrCanvas"></canvas><div class="qr-guide"></div>';
+  }
+  video=$("#qrVideo");canvas=$("#qrCanvas");ctx=canvas.getContext("2d",{willReadFrequently:true});
+}
+function scanFrame(){
+  if(!scanning||!video||video.readyState<2){if(scanning)raf=requestAnimationFrame(scanFrame);return;}
+  const w=video.videoWidth,h=video.videoHeight;
+  if(!w||!h){raf=requestAnimationFrame(scanFrame);return;}
+  if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}
+  ctx.drawImage(video,0,0,w,h);
+  try{
+    if(typeof jsQR!=="function")throw new Error("jsQR no está cargado");
+    const image=ctx.getImageData(0,0,w,h);
+    const result=jsQR(image.data,w,h,{inversionAttempts:"attemptBoth"});
+    if(result?.data)procesarLectura(result.data);
+  }catch(e){console.warn("Lectura QR:",e);}
+  raf=requestAnimationFrame(scanFrame);
 }
 async function startScanner(){
   if(scanning)return;
-  $("#status").textContent="Solicitando acceso a la cámara…";
-  lastQrText="";lastQrAt=0;
-  const success=(text)=>{ procesarLectura(text); };
-  const failure=()=>{};
+  if(location.protocol!=="https:"&&location.hostname!=="localhost"){$("#status").textContent="La cámara requiere HTTPS. Abre la página publicada con https://";return;}
+  if(typeof jsQR!=="function"){$("#status").textContent="No se cargó el lector QR. Recarga la página con internet.";return;}
+  $("#status").textContent="Solicitando acceso a la cámara…";lastQrText="";lastQrAt=0;ensureReader();
   try{
-    if(typeof Html5Qrcode==="undefined")throw new Error("No se cargó el lector QR. Comprueba la conexión a internet.");
-    scanner=new Html5Qrcode("reader",{verbose:false});
-    try{
-      await scanner.start({facingMode:{exact:"environment"}},scannerConfig(),success,failure);
-    }catch(first){
-      try{await scanner.clear();}catch(_){ }
-      scanner=new Html5Qrcode("reader",{verbose:false});
-      const cams=await Html5Qrcode.getCameras();
-      if(!cams||!cams.length)throw first;
-      const rear=cams.find(c=>/back|rear|environment|trasera|posterior/i.test(c.label))||cams[0];
-      await scanner.start(rear.id,scannerConfig(),success,failure);
-    }
-    scanning=true;
-    $("#status").textContent="Cámara activa. Centra el QR dentro del recuadro.";
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}},audio:false});
+    video.srcObject=stream;await video.play();scanning=true;$("#status").textContent="Cámara activa. Centra el QR dentro del recuadro.";raf=requestAnimationFrame(scanFrame);
   }catch(e){
-    console.error("No se pudo iniciar el lector QR:",e);
-    try{if(scanner)await scanner.clear();}catch(_){ }
-    scanner=null;scanning=false;
-    if(location.protocol!=="https:"&&location.hostname!=="localhost"){
-      $("#status").textContent="La cámara requiere HTTPS. Abre la página publicada con https://";
-    }else if(/Permission|NotAllowed|denied/i.test(e.message||"")){
-      $("#status").textContent="El navegador bloqueó la cámara. Permite la cámara para este sitio y pulsa Activar cámara otra vez.";
-    }else{
-      $("#status").textContent="No se pudo activar la cámara: "+(e.message||e);
-    }
+    console.error(e);scanning=false;
+    $("#status").textContent=/NotAllowed|Permission|denied/i.test(e.name+" "+e.message)?"El navegador bloqueó la cámara. Permite la cámara para este sitio y vuelve a intentarlo.":"No se pudo activar la cámara: "+(e.message||e);
   }
 }
 async function stopScanner(){
-  if(!scanner)return;
-  try{if(scanning)await scanner.stop();}catch(e){}
-  try{await scanner.clear();}catch(e){}
-  scanner=null;scanning=false;
+  scanning=false;if(raf)cancelAnimationFrame(raf);raf=0;
+  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
+  if(video)video.srcObject=null;
 }
-$("#startBtn").onclick=startScanner;
-$("#stopBtn").onclick=stopScanner;
-$("#testCamBtn").onclick=async()=>{
-  if(scanning){$("#status").textContent="Detén la cámara antes de probarla.";return;}
-  if(!navigator.mediaDevices?.getUserMedia){$("#status").textContent="Este navegador no permite acceso a la cámara.";return;}
-  try{
-    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}}});
-    stream.getTracks().forEach(t=>t.stop());
-    $("#status").textContent="✓ El teléfono sí permite usar la cámara. Pulsa Activar cámara para iniciar el lector QR.";
-  }catch(e){
-    $("#status").textContent="✗ El teléfono está bloqueando la cámara. Revisa Permisos del navegador.";
-  }
-};
+$("#startBtn").onclick=startScanner;$("#stopBtn").onclick=stopScanner;
+$("#testCamBtn").onclick=async()=>{if(scanning){$("#status").textContent="Detén la cámara antes de probarla.";return;}if(!navigator.mediaDevices?.getUserMedia){$("#status").textContent="Este navegador no permite acceso a la cámara.";return;}try{const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}},audio:false});s.getTracks().forEach(t=>t.stop());$("#status").textContent="✓ El teléfono sí permite usar la cámara. Pulsa Activar cámara para iniciar el lector QR.";}catch(e){$("#status").textContent="✗ El teléfono está bloqueando la cámara. Revisa Permisos del navegador.";}};
 
 /* ---------- Panel de pedidos en curso (se actualiza en vivo) ---------- */
 const ORDEN={listo:0,preparando:1,recibido:2,espera:3},PASOS=["espera","recibido","preparando","listo"];
