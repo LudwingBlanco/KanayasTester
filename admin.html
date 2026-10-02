@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <title>Kanayas · Admin</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Caveat+Brush&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="staff.css">
+  <style>
+    main{padding:1.2rem clamp(1rem,3vw,2rem) 4rem;max-width:1500px;margin:auto}
+    .admin-head{display:flex;align-items:flex-end;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin:1rem 0 1.2rem}
+    .admin-head h1{font-size:2.5rem}.admin-head p{opacity:.62;margin-top:.35rem}
+    .periods{display:flex;gap:.4rem;flex-wrap:wrap}.periods button{padding:.6rem .9rem;border:2px solid var(--line);border-radius:99px;font-weight:700}.periods button.on{background:var(--amber);border-color:var(--amber);color:var(--bg)}
+    .grid-kpi{display:grid;grid-template-columns:repeat(6,minmax(150px,1fr));gap:.7rem}
+    .kpi,.panel{background:var(--card);border:2px solid var(--line);border-radius:22px}
+    .kpi{padding:1rem}.kpi .ico{font-size:1.25rem}.kpi b{display:block;font-family:'Anton';font-size:1.8rem;font-weight:400;color:var(--amber);margin:.25rem 0}.kpi span{font-size:.78rem;opacity:.62}
+    .dash{display:grid;grid-template-columns:1.25fr .9fr;gap:1rem;margin-top:1rem}.panel{padding:1rem 1.1rem}.panel h2{font-size:1.25rem;margin-bottom:.9rem}.panel .subtle{font-size:.8rem;opacity:.55}
+    .table-wrap{overflow:auto}.data-table{width:100%;border-collapse:collapse;font-size:.9rem}.data-table th,.data-table td{text-align:left;padding:.65rem .45rem;border-bottom:1px solid var(--line);white-space:nowrap}.data-table th{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;opacity:.55}.data-table td b{color:var(--cream)}
+    .bars{display:grid;gap:.55rem}.bar-row{display:grid;grid-template-columns:74px 1fr 72px;gap:.5rem;align-items:center;font-size:.78rem}.bar-track{height:11px;background:var(--bg);border-radius:99px;overflow:hidden;border:1px solid var(--line)}.bar-fill{height:100%;background:var(--amber);border-radius:99px;min-width:2px}.bar-val{text-align:right;font-weight:700}
+    .metric-list{display:grid;gap:.5rem}.metric{display:flex;justify-content:space-between;gap:1rem;padding:.65rem .7rem;background:var(--bg);border:1px solid var(--line);border-radius:13px}.metric span{opacity:.65}.metric b{font-weight:700}
+    .rank{display:grid;grid-template-columns:2rem 1fr auto;gap:.6rem;align-items:center;padding:.65rem 0;border-bottom:1px dashed var(--line)}.rank:last-child{border:0}.rank-num{font-family:'Anton';font-size:1.2rem;color:var(--amber)}.rank-name{font-weight:700}.rank-meta{font-size:.75rem;opacity:.55}.rank-price{font-weight:700}
+    .status-pill{display:inline-block;padding:.2rem .55rem;border-radius:99px;font-size:.7rem;font-weight:700}.good{background:rgba(62,207,142,.12);color:var(--green)}.warn{background:rgba(245,163,26,.12);color:var(--amber)}.bad{background:rgba(255,107,91,.12);color:var(--red)}
+    .empty-admin{padding:2rem;text-align:center;opacity:.55;border:2px dashed var(--line);border-radius:16px}
+    .footnote{font-size:.75rem;opacity:.45;margin-top:.8rem;line-height:1.5}
+    @media(max-width:1100px){.grid-kpi{grid-template-columns:repeat(3,1fr)}.dash{grid-template-columns:1fr}}
+    @media(max-width:650px){.grid-kpi{grid-template-columns:repeat(2,1fr)}.kpi b{font-size:1.45rem}.admin-head h1{font-size:2rem}.bar-row{grid-template-columns:58px 1fr 58px}}
+  </style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><a class="logo" href="index.html">Kanayas</a><span class="role">Admin</span></div>
+  <span class="net" id="net">⚪ Conectando…</span>
+  <div class="links"><a href="personal.html">Personal</a><button id="refresh">↻ Actualizar</button><button id="out">Salir</button></div>
+</header>
+
+<main>
+  <div id="err"></div>
+  <section class="admin-head">
+    <div><h1>Panel de administración</h1><p id="rangeLabel">Cargando periodo…</p></div>
+    <div class="periods" role="tablist">
+      <button class="on" data-period="day">Hoy</button>
+      <button data-period="month">Este mes</button>
+      <button data-period="semester">6 meses</button>
+      <button data-period="all">Todo</button>
+    </div>
+  </section>
+
+  <section class="grid-kpi" id="kpis"></section>
+
+  <div class="dash">
+    <section class="panel">
+      <h2>Ventas por día</h2>
+      <div class="bars" id="salesBars"></div>
+      <div class="footnote">Ingresos calculados a partir del total registrado en cada pedido confirmado.</div>
+    </section>
+    <section class="panel">
+      <h2>Operación y tiempos</h2>
+      <div class="metric-list" id="operations"></div>
+    </section>
+  </div>
+
+  <div class="dash">
+    <section class="panel">
+      <h2>Productos más vendidos</h2>
+      <div id="products"></div>
+    </section>
+    <section class="panel">
+      <h2>Horas de mayor demanda</h2>
+      <div class="bars" id="hours"></div>
+    </section>
+  </div>
+
+  <div class="dash">
+    <section class="panel">
+      <h2>Rendimiento por mesa</h2>
+      <div class="table-wrap"><table class="data-table"><thead><tr><th>Mesa</th><th>Pedidos</th><th>Ventas</th><th>Ticket prom.</th><th>Unidades</th></tr></thead><tbody id="tables"></tbody></table></div>
+    </section>
+    <section class="panel">
+      <h2>Preferencias del cliente</h2>
+      <div class="metric-list" id="preferences"></div>
+    </section>
+  </div>
+
+  <div class="dash">
+    <section class="panel">
+      <h2>Estado de los pedidos</h2>
+      <div class="metric-list" id="statuses"></div>
+    </section>
+    <section class="panel">
+      <h2>Indicadores económicos</h2>
+      <div class="metric-list" id="economics"></div>
+    </section>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="staff.js"></script>
+<script>
+const ADMIN_CLAVE = "0000";
+const ADMIN_SESSION = "kanayas_admin_acceso";
+const ADMIN_HORAS = 4;
+let allOrders = [];
+let period = "day";
+
+function adminAcceso(iniciar){
+  if(+localStorage.getItem(ADMIN_SESSION) > Date.now()) return iniciar();
+  const g=document.createElement("div");g.className="gate";
+  g.innerHTML='<form class="gate-card"><h2>Área de administración</h2><p>Ingresa la contraseña para continuar.</p><input type="password" inputmode="numeric" autocomplete="off" placeholder="••••" id="adminGateIn" autofocus><div class="gate-err" id="adminGateErr"></div><button class="btn primary" type="submit">Entrar</button><a href="personal.html" style="color:inherit;opacity:.6;font-size:.9rem">← Volver al personal</a></form>';
+  document.body.append(g);
+  g.querySelector("form").onsubmit=e=>{
+    e.preventDefault();
+    if($("#adminGateIn").value===ADMIN_CLAVE){
+      localStorage.setItem(ADMIN_SESSION,Date.now()+ADMIN_HORAS*3600000);g.remove();iniciar();
+    }else{
+      $("#adminGateErr").textContent="Contraseña incorrecta";
+      const c=g.querySelector(".gate-card");c.classList.remove("shake");void c.offsetWidth;c.classList.add("shake");$("#adminGateIn").value="";
+    }
+  };
+}
+function adminSalir(){localStorage.removeItem(ADMIN_SESSION);location.href="personal.html";}
+$("#out").onclick=adminSalir;
+$("#refresh").onclick=()=>{render();toast("Estadísticas actualizadas ✓",true)};
+
+function dateOf(o){
+  const raw=o.confirmadoMs || o.fechaMs || (o.fecha ? Date.parse(o.fecha) : 0);
+  return raw ? new Date(raw) : null;
+}
+function money(n){return "$"+Math.round(Number(n)||0).toLocaleString("es-CO");}
+function minutes(ms){if(!ms||ms<0)return "—";const m=Math.round(ms/60000);if(m<60)return m+" min";return Math.floor(m/60)+" h "+(m%60)+" min";}
+function pct(n,d){return d?Math.round(n/d*100):0;}
+function periodBounds(){
+  const now=new Date(),start=new Date(now);
+  if(period==="day"){start.setHours(0,0,0,0)}
+  else if(period==="month"){start.setDate(1);start.setHours(0,0,0,0)}
+  else if(period==="semester"){start.setMonth(start.getMonth()-5,1);start.setHours(0,0,0,0)}
+  else {start.setTime(0)}
+  return {start,end:now};
+}
+function inPeriod(o,b){
+  const d=dateOf(o);return d && d>=b.start && d<=b.end;
+}
+function confirmedOrders(){
+  return allOrders.filter(o=>o.enviadoCocina===true && dateOf(o));
+}
+function render(){
+  const b=periodBounds(), orders=confirmedOrders().filter(o=>inPeriod(o,b));
+  const sold=orders.reduce((n,o)=>n+(o.items||[]).reduce((a,i)=>a+(Number(i.cantidad)||0),0),0);
+  const revenue=orders.reduce((n,o)=>n+(Number(o.total)||0),0);
+  const avg=orders.length?revenue/orders.length:0;
+  const delivered=orders.filter(o=>o.estado==="entregado").length;
+  const active=orders.length-delivered;
+  const prep=orders.map(o=>Number(o.listoMs)-Number(o.confirmadoMs)).filter(x=>x>0);
+  const delivery=orders.map(o=>Number(o.entregadoMs)-Number(o.confirmadoMs)).filter(x=>x>0);
+
+  $("#rangeLabel").textContent=`${b.start.toLocaleDateString("es-CO")} → ${b.end.toLocaleDateString("es-CO")} · ${orders.length} pedidos analizados`;
+  $("#kpis").innerHTML=[
+    ["💰","Ventas",money(revenue),"ingresos registrados"],
+    ["🧾","Pedidos",orders.length,"pedidos confirmados"],
+    ["🎟️","Ticket promedio",money(avg),"venta media por pedido"],
+    ["🍽️","Unidades",sold,"productos vendidos"],
+    ["🔥","Entregados",delivered,`${pct(delivered,orders.length)}% del periodo`],
+    ["⏳","En curso",active,"aún no entregados"]
+  ].map(x=>`<article class="kpi"><div class="ico">${x[0]}</div><b>${x[2]}</b><span>${x[1]} · ${x[3]}</span></article>`).join("");
+
+  renderBars(orders);
+  renderOperations(orders,prep,delivery);
+  renderProducts(orders);
+  renderHours(orders);
+  renderTables(orders);
+  renderPreferences(orders);
+  renderStatuses(orders);
+  renderEconomics(orders);
+}
+function renderBars(orders){
+  const map={};
+  orders.forEach(o=>{const d=dateOf(o);if(!d)return;const k=d.toISOString().slice(0,10);map[k]=(map[k]||0)+(Number(o.total)||0)});
+  let keys=Object.keys(map).sort();
+  if(period==="day") keys=[keys[keys.length-1]||new Date().toISOString().slice(0,10)];
+  else if(period==="month") keys=keys.slice(-31);
+  else keys=keys.slice(-30);
+  const max=Math.max(1,...keys.map(k=>map[k]||0));
+  $("#salesBars").innerHTML=keys.length?keys.map(k=>`<div class="bar-row"><span>${k.slice(8,10)}/${k.slice(5,7)}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.max(2,map[k]/max*100)}%"></div></div><span class="bar-val">${money(map[k]).replace(" ","")}</span></div>`).join(""):'<div class="empty-admin">Sin ventas en este periodo.</div>';
+}
+function renderOperations(orders,prep,delivery){
+  const avgPrep=prep.length?prep.reduce((a,b)=>a+b,0)/prep.length:0,avgDel=delivery.length?delivery.reduce((a,b)=>a+b,0)/delivery.length:0;
+  const wait=orders.map(o=>Number(o.recibidoMs)-Number(o.confirmadoMs)).filter(x=>x>0);
+  const avgWait=wait.length?wait.reduce((a,b)=>a+b,0)/wait.length:0;
+  const ready=orders.filter(o=>o.estado==="listo").length;
+  $("#operations").innerHTML=[
+    ["Tiempo medio hasta cocina",minutes(avgWait)],
+    ["Tiempo medio de preparación",minutes(avgPrep)],
+    ["Tiempo medio hasta entrega",minutes(avgDel)],
+    ["Pedidos entregados",orders.filter(o=>o.estado==="entregado").length],
+    ["Pedidos pendientes",orders.filter(o=>o.estado!=="entregado").length],
+    ["Pedidos con tiempos completos",delivery.length]
+  ].map(x=>`<div class="metric"><span>${x[0]}</span><b>${x[1]}</b></div>`).join("");
+}
+function renderProducts(orders){
+  const map={};
+  orders.forEach(o=>(o.items||[]).forEach(i=>{const n=i.nombre||"Sin nombre";if(!map[n])map[n]={q:0,sales:0};map[n].q+=Number(i.cantidad)||0;map[n].sales+=(Number(i.precioUnitario)||0)*(Number(i.cantidad)||0)}));
+  const arr=Object.entries(map).sort((a,b)=>b[1].q-a[1].q).slice(0,10);
+  $("#products").innerHTML=arr.length?arr.map(([n,v],i)=>`<div class="rank"><span class="rank-num">#${i+1}</span><div><div class="rank-name">${esc(n)}</div><div class="rank-meta">${v.q} unidades · ${money(v.sales)}</div></div><span class="rank-price">${money(v.sales)}</span></div>`).join(""):'<div class="empty-admin">Sin productos vendidos.</div>';
+}
+function renderHours(orders){
+  const map=Array.from({length:24},()=>0);
+  orders.forEach(o=>{const d=dateOf(o);if(d)map[d.getHours()]++});
+  const max=Math.max(1,...map), top=map.map((v,h)=>({h,v})).sort((a,b)=>b.v-a.v).slice(0,8).filter(x=>x.v);
+  $("#hours").innerHTML=top.length?top.map(x=>`<div class="bar-row"><span>${String(x.h).padStart(2,"0")}:00</span><div class="bar-track"><div class="bar-fill" style="width:${x.v/max*100}%"></div></div><span class="bar-val">${x.v} ped.</span></div>`).join(""):'<div class="empty-admin">No hay suficientes datos.</div>';
+}
+function renderTables(orders){
+  const map={};
+  orders.forEach(o=>{const m=String(o.mesa||"?");if(!map[m])map[m]={n:0,s:0,u:0};map[m].n++;map[m].s+=Number(o.total)||0;map[m].u+=(o.items||[]).reduce((a,i)=>a+(Number(i.cantidad)||0),0)});
+  const arr=Object.entries(map).sort((a,b)=>b[1].s-a[1].s);
+  $("#tables").innerHTML=arr.length?arr.map(([m,v])=>`<tr><td><b>Mesa ${esc(m)}</b></td><td>${v.n}</td><td>${money(v.s)}</td><td>${money(v.s/v.n)}</td><td>${v.u}</td></tr>`).join(""):'<tr><td colspan="5">Sin datos.</td></tr>';
+}
+function renderPreferences(orders){
+  let extras=0,noIng=0,notes=0,withName=0;
+  const extraMap={};
+  orders.forEach(o=>{
+    if(o.cliente && o.cliente!=="Cliente")withName++;
+    (o.items||[]).forEach(i=>{
+      noIng+=(i.sin||[]).length;notes+=i.nota?1:0;
+      (i.extras||[]).forEach(e=>{extras++;const n=e.nombre||"Extra";extraMap[n]=(extraMap[n]||0)+1});
+    });
+  });
+  const topExtra=Object.entries(extraMap).sort((a,b)=>b[1]-a[1])[0];
+  $("#preferences").innerHTML=[
+    ["Personalizaciones sin ingrediente",noIng],
+    ["Extras agregados",extras],
+    ["Notas especiales",notes],
+    ["Pedidos con nombre",`${pct(withName,orders.length)}%`],
+    ["Extra más solicitado",topExtra?`${esc(topExtra[0])} (${topExtra[1]})`:"—"]
+  ].map(x=>`<div class="metric"><span>${x[0]}</span><b>${x[1]}</b></div>`).join("");
+}
+function renderStatuses(orders){
+  const states=[["entregado","Entregados"],["listo","Listos"],["preparando","Preparándose"],["recibido","Recibidos"],["espera","En espera"],["pendiente","Sin confirmar"]];
+  $("#statuses").innerHTML=states.map(([s,n])=>{
+    const q=orders.filter(o=>o.estado===s).length;
+    const cls=s==="entregado"?"good":s==="pendiente"?"bad":"warn";
+    return `<div class="metric"><span>${n}</span><b class="status-pill ${cls}">${q} · ${pct(q,orders.length)}%</b></div>`;
+  }).join("");
+}
+function renderEconomics(orders){
+  const revenue=orders.reduce((a,o)=>a+(Number(o.total)||0),0);
+  const discounts=0;
+  const units=orders.reduce((a,o)=>a+(o.items||[]).reduce((b,i)=>b+(Number(i.cantidad)||0),0),0);
+  const avgUnits=orders.length?units/orders.length:0;
+  const delivered=orders.filter(o=>o.estado==="entregado").length;
+  $("#economics").innerHTML=[
+    ["Ingresos brutos registrados",money(revenue)],
+    ["Venta promedio",money(orders.length?revenue/orders.length:0)],
+    ["Unidades por pedido",avgUnits.toFixed(1)],
+    ["Ingreso por unidad",money(units?revenue/units:0)],
+    ["Tasa de entrega",pct(delivered,orders.length)+"%"],
+    ["Descuentos registrados",money(discounts)]
+  ].map(x=>`<div class="metric"><span>${x[0]}</span><b>${x[1]}</b></div>`).join("");
+}
+
+function cargarPedidos(){
+  if(!window.kanayasDb){$("#err").innerHTML='<div class="err">Firebase no está configurado. Revisa firebase-config.js.</div>';return}
+  conexion("wait","⚪ Cargando estadísticas…");
+  kanayasDb.collection("pedidos").get().then(s=>{
+    allOrders=s.docs.map(d=>({id:d.id,...d.data()}));
+    conexion("ok",`🟢 ${allOrders.length} pedidos`);
+    render();
+  }).catch(e=>{
+    conexion("no","🔴 Sin acceso");
+    $("#err").innerHTML='<div class="err">'+esc(e.code==="permission-denied"?"Firebase no permite leer el historial. Revisa las reglas de Firestore.":(e.message||"No se pudo cargar el historial."))+'</div>';
+  });
+}
+
+document.querySelectorAll(".periods button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll(".periods button").forEach(x=>x.classList.remove("on"));
+  b.classList.add("on");period=b.dataset.period;render();
+});
+
+adminAcceso(cargarPedidos);
+</script>
+</body>
+</html>
