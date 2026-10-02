@@ -4,7 +4,7 @@
 <link rel="stylesheet" href="staff.css">
 <style>
 main{width:min(820px,100%);margin:auto;padding:1rem 1rem 6rem}
-.tabs{position:sticky;top:60px;z-index:15;display:grid;grid-template-columns:1fr 1fr;gap:.4rem;padding:.4rem;margin:.8rem 0 1rem;background:var(--card);border:2px solid var(--line);border-radius:99px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:.4rem;padding:.4rem;margin:.8rem 0 1rem;background:var(--card);border:2px solid var(--line);border-radius:99px}
 .tabs button{padding:.8rem .4rem;border-radius:99px;font-weight:700;transition:all .35s var(--ease)}.tabs button.on{background:var(--amber);color:var(--bg)}
 .tabs b{background:var(--red);color:#fff;border-radius:99px;padding:0 .5rem;margin-left:.3rem;font-size:.8rem}.tabs b:empty,.tabs b.zero{display:none}
 .pane{display:none}.pane.on{display:block;animation:in .6s var(--ease)}@keyframes in{from{opacity:0;transform:translateY(16px)}}
@@ -19,7 +19,10 @@ main{width:min(820px,100%);margin:auto;padding:1rem 1rem 6rem}
 .code{opacity:.6;font-size:.85rem;text-align:right}
 .total{display:flex;justify-content:space-between;align-items:baseline;font-weight:700;padding:.8rem 0}.total b{font-family:'Anton',sans-serif;font-size:2rem;font-weight:400;color:var(--amber)}
 .fix{margin:.6rem 0;display:none}.fix.show{display:flex;gap:.6rem}
-.done{text-align:center;padding:1rem;display:none}.done.show{display:block}.done h3{font-family:'Anton',sans-serif;font-weight:400;font-size:2rem;color:var(--green);text-transform:uppercase}
+.two{display:grid;grid-template-columns:1.5fr 1fr;gap:.6rem}.two .btn{font-size:1.05rem;padding:1.05rem .6rem}
+.sent{min-height:1.4em;margin:.8rem 0 .2rem;text-align:center;font-weight:700;color:var(--green)}
+.lnk{display:block;margin:0 auto;font-size:.9rem;opacity:.6;text-decoration:underline;padding:.4rem}
+.x{position:absolute;top:.8rem;right:.9rem;width:38px;height:38px;border-radius:50%;background:var(--bg);border:2px solid var(--line);font-size:1rem}.rev{position:relative}
 .sum{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem}.sum span{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:.35rem .8rem;font-weight:700;font-size:.85rem}.sum b{color:var(--amber);font-family:'Anton',sans-serif;font-weight:400;font-size:1.1rem;margin-right:.3rem}
 .ord{background:var(--card);border:2px solid var(--line);border-radius:24px;padding:1.1rem;margin-bottom:.9rem;display:grid;gap:.7rem;animation:in .6s var(--ease) both}
 .ord.s-listo{border-color:var(--green);box-shadow:0 0 0 3px rgba(62,207,142,.18);animation:glow 2s infinite}
@@ -33,10 +36,10 @@ main{width:min(820px,100%);margin:auto;padding:1rem 1rem 6rem}
 .steps li.d{opacity:1;border-top-color:var(--amber)}.steps li.c{opacity:1;color:var(--amber)}.s-listo .steps li.d{border-top-color:var(--green)}.s-listo .steps li.c{color:var(--green)}
 details summary{cursor:pointer;font-weight:700;font-size:.9rem;color:var(--amber)}
 .empty{opacity:.55;text-align:center;padding:2.5rem 1rem;border:2px dashed var(--line);border-radius:22px}
-@media print{body{background:#fff;color:#000}.top,.tabs,.btn,.row,.manual{display:none!important}.pane{display:none}#pane-nuevo{display:block}.box{border:0}.chip,.nota{border:1px solid #000;color:#000;background:#fff}}
+@media print{#scanBox,.net,.sent,.lnk,.x,.fix{display:none!important}body{background:#fff;color:#000}.top,.tabs,.btn,.row,.manual{display:none!important}.pane{display:none}#pane-nuevo{display:block}.box{border:0}.chip,.nota{border:1px solid #000;color:#000;background:#fff}}
 </style></head><body>
 <header class="top"><div class="brand"><a class="logo" href="index.html">Kanayas</a><span class="role">Mesero</span></div>
-<div class="links"><a href="personal.html">Personal</a><button id="out">Salir</button></div></header>
+<span class="net" id="net">⚪ Conectando…</span><div class="links"><a href="personal.html">Personal</a><button id="out">Salir</button></div></header>
 <main>
 <nav class="tabs"><button class="on" data-tab="nuevo">📷 Nuevo pedido</button><button data-tab="curso">📋 Pedidos en curso <b id="cnt"></b></button></nav>
 
@@ -49,13 +52,13 @@ details summary{cursor:pointer;font-weight:700;font-size:.9rem;color:var(--amber
     <p class="status" id="status"></p>
   </div>
   <section class="box rev" id="rev">
-    <div class="rev-head"><div><p class="tag">Pedido recibido</p><div class="mesaBig" id="rMesa">Mesa</div><div id="rCli" style="font-weight:700"></div></div><div class="code" id="rCode"></div></div>
+    <div class="rev-head"><button class="x" id="clearBtn" aria-label="Cerrar pedido">✕</button><div><p class="tag">Pedido recibido</p><div class="mesaBig" id="rMesa">Mesa</div><div id="rCli" style="font-weight:700"></div></div><div class="code" id="rCode"></div></div>
     <div class="fix" id="fix"><input id="fixMesa" placeholder="Este pedido no trae mesa. Escribe el número"></div>
     <div id="rItems"></div>
     <div class="total"><span>Total</span><b id="rTotal"></b></div>
-    <div class="row"><button class="btn ok" id="sendBtn" style="flex:1;font-size:1.05rem">✅ Confirmar y enviar a cocina</button><button class="btn ghost" id="printBtn">Imprimir</button><button class="btn ghost" id="clearBtn">Cancelar</button></div>
-    <div class="done" id="done"><h3>¡Enviado a cocina!</h3><p id="doneTxt" style="opacity:.75"></p>
-      <div class="row" style="justify-content:center"><button class="btn primary" id="again">Escanear otro</button><button class="btn ghost" id="goCurso">Ver pedidos en curso</button></div></div>
+    <div class="two"><button class="btn ok" id="sendBtn">✅ Enviar a cocina</button><button class="btn ghost" id="printBtn">🖨️ Imprimir</button></div>
+    <p class="sent" id="sentMsg"></p>
+    <button class="lnk" id="again">Escanear otro pedido</button>
   </section>
 </section>
 
@@ -73,7 +76,7 @@ details summary{cursor:pointer;font-weight:700;font-size:.9rem;color:var(--amber
 let scanner=null,scanning=false,cur=null;
 const tabTo=t=>{document.querySelectorAll(".tabs button").forEach(b=>b.classList.toggle("on",b.dataset.tab===t));document.querySelectorAll(".pane").forEach(p=>p.classList.toggle("on",p.id==="pane-"+t))};
 document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>tabTo(b.dataset.tab));
-$("#out").onclick=salir;$("#goCurso").onclick=()=>tabTo("curso");
+$("#out").onclick=salir;
 
 /* ---------- Escanear / abrir pedido ---------- */
 function codeFromInput(v){v=String(v||"").trim();if(!v)return null;if(/^KAN-[A-Z0-9-]+$/i.test(v))return v.toUpperCase();
@@ -88,8 +91,8 @@ function pintarPedido(){
   const o=cur,enviado=o.estado&&o.estado!=="pendiente";
   $("#rMesa").textContent=o.mesa?"Mesa "+o.mesa:"Sin mesa";$("#rCli").textContent="👤 "+(o.cliente||"Cliente");$("#rCode").textContent=o.codigo||o.id;
   $("#rItems").innerHTML=itemsHtml(o.items);$("#rTotal").textContent=fmt(o.total);
-  $("#fix").classList.toggle("show",!o.mesa&&!enviado);$("#done").classList.remove("show");
-  const b=$("#sendBtn");b.disabled=enviado;b.textContent=enviado?"Ya enviado · "+(ESTADOS[o.estado]||o.estado):"✅ Confirmar y enviar a cocina";
+  $("#fix").classList.toggle("show",!o.mesa&&!enviado);$("#sentMsg").textContent=enviado?"✓ Este pedido ya está en cocina":"";
+  const b=$("#sendBtn");b.disabled=enviado;b.textContent=enviado?"✓ Enviado · "+(ESTADOS[o.estado]||o.estado):"✅ Enviar a cocina";
   $("#rev").classList.add("show");$("#rev").scrollIntoView({behavior:"smooth"});
 }
 $("#sendBtn").onclick=async()=>{
@@ -99,10 +102,12 @@ $("#sendBtn").onclick=async()=>{
     const ref=kanayasDb.collection("pedidos").doc(cur.id),s=await ref.get();
     if(s.data().estado&&s.data().estado!=="pendiente"){cur={...cur,...s.data()};pintarPedido();toast("Este pedido ya había sido enviado");return}
     await ref.update({mesa,estado:"espera",enviadoCocina:true,dia:hoy(),confirmadoEn:firebase.firestore.FieldValue.serverTimestamp(),confirmadoMs:Date.now()});
-    $("#doneTxt").textContent="Mesa "+mesa+" · "+(cur.codigo||cur.id);$("#done").classList.add("show");b.style.display="none";toast("Pedido enviado a cocina ✓",true);
-  }catch(e){b.disabled=false;b.textContent="✅ Confirmar y enviar a cocina";toast("No se pudo enviar. Revisa la conexión.")}
+    const v=await ref.get();if(!v.exists||v.data().enviadoCocina!==true)throw new Error("sin confirmar");
+    cur={...cur,mesa,estado:"espera"};b.textContent="✓ Enviado a cocina";$("#fix").classList.remove("show");
+    $("#sentMsg").textContent="✓ Mesa "+mesa+" enviada: ya aparece en la pantalla de cocina";toast("Pedido enviado a cocina ✓",true);
+  }catch(e){b.disabled=false;b.textContent="✅ Enviar a cocina";$("#sentMsg").textContent="";toast("No se pudo enviar. Revisa la conexión e intenta de nuevo.")}
 };
-function reset(){$("#rev").classList.remove("show");$("#sendBtn").style.display="";$("#status").textContent="";$("#manualInput").value="";cur=null;history.replaceState(null,"",location.pathname)}
+function reset(){$("#rev").classList.remove("show");$("#sentMsg").textContent="";$("#status").textContent="";$("#manualInput").value="";cur=null;history.replaceState(null,"",location.pathname)}
 $("#clearBtn").onclick=reset;$("#again").onclick=reset;$("#printBtn").onclick=()=>print();
 $("#manualBtn").onclick=()=>{$("#status").textContent="Buscando…";abrir($("#manualInput").value).catch(e=>$("#status").textContent=e.message)};
 async function startScanner(){if(scanning)return;try{scanner=new Html5Qrcode("reader");

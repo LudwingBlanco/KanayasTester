@@ -38,9 +38,18 @@ function acceso(iniciar) {
 const salir = () => { localStorage.removeItem("kanayas_acceso"); location.href = "index.html"; };
 
 /* Pedidos enviados a cocina hoy, ordenados por llegada (los más antiguos primero) */
+try { if (window.kanayasDb) kanayasDb.settings({ experimentalAutoDetectLongPolling: true, merge: true }); } catch (e) {}  // mejora la conexión en redes con filtros
+function conexion(ok, txt) { const n = $("#net"); if (n) { n.textContent = txt; n.dataset.ok = ok; } }
 function escucharPedidos(cb) {
-  if (!window.kanayasDb) { cb(null, new Error("Firebase no está configurado. Completa firebase-config.js")); return () => {}; }
-  return kanayasDb.collection("pedidos").where("enviadoCocina", "==", true).where("dia", "==", hoy())
-    .onSnapshot((s) => cb(s.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => tMs(a) - tMs(b))), (e) => cb(null, e));
+  if (!window.kanayasDb) { conexion("no", "🔴 Firebase sin configurar"); cb(null, new Error("Firebase no está configurado. Completa firebase-config.js")); return () => {}; }
+  conexion("wait", "⚪ Conectando…");
+  // Una sola condición (pedidos confirmados en las últimas 24 h): no necesita índices ni depende de la zona horaria
+  return kanayasDb.collection("pedidos").where("confirmadoMs", ">", Date.now() - 24 * 3600 * 1000).onSnapshot((s) => {
+    conexion(s.metadata.fromCache ? "wait" : "ok", s.metadata.fromCache ? "🟡 Reconectando…" : "🟢 En vivo");
+    cb(s.docs.map((d) => ({ id: d.id, ...d.data() })).filter((o) => o.enviadoCocina === true).sort((a, b) => tMs(a) - tMs(b)));
+  }, (e) => {
+    conexion("no", "🔴 Sin conexión");
+    cb(null, new Error(e.code === "permission-denied" ? "Firebase no permite leer los pedidos. Revisa las reglas de Firestore." : "No se pudo conectar con Firebase (" + (e.code || e.message) + ")."));
+  });
 }
 const cambiarEstado = (id, estado) => kanayasDb.collection("pedidos").doc(id).update({ estado, [estado + "Ms"]: Date.now() });

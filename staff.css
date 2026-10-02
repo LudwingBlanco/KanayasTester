@@ -32,4 +32,5 @@ h1,h2{font-family:'Anton',Impact,sans-serif;font-weight:400;text-transform:upper
 @keyframes shake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
 .toast{position:fixed;left:50%;bottom:1.2rem;z-index:150;background:var(--amber);color:var(--bg);font-weight:700;padding:.9rem 1.5rem;border-radius:99px;transform:translate(-50%,220%);transition:transform .6s var(--ease);max-width:92vw;text-align:center}
 .toast.on{transform:translate(-50%,0)}.toast.good{background:var(--green)}
+.net{font-size:.8rem;font-weight:700;padding:.3rem .8rem;border-radius:99px;border:2px solid var(--line)}.net[data-ok=ok]{color:var(--green);border-color:var(--green)}.net[data-ok=no]{color:var(--red);border-color:var(--red)}
 .err{background:rgba(255,107,91,.12);border:2px solid var(--red);border-radius:18px;padding:1rem;margin:1rem 0;color:var(--red);font-weight:700}
